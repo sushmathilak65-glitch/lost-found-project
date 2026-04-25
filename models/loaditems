@@ -1,0 +1,47 @@
+// LOAD ITEMS (from backend)
+function loadItems(){
+    fetch("/api/items")
+    .then(res => res.json())
+    .then(items => {
+        displayItems(items); // send data to display function
+    })
+    .catch(err => console.error("Error loading items:", err));
+}
+
+
+// DISPLAY ITEMS (with highlight feature)
+function displayItems(items){
+
+    let lostDiv = document.getElementById("lostItems");
+    let foundDiv = document.getElementById("foundItems");
+
+    lostDiv.innerHTML = "";
+    foundDiv.innerHTML = "";
+
+    items.forEach(item => {
+
+        let card = document.createElement("div");
+        card.className = "card";
+
+        // 🎯 Highlight matched items
+        if(item.matched){
+            card.style.border = "3px solid yellow";
+            card.style.boxShadow = "0 0 15px yellow";
+        }
+
+        card.innerHTML = `
+            <img src="${item.photo}">
+            <h3>${item.name}</h3>
+            <p>${item.description}</p>
+            <p><b>Location:</b> ${item.location}</p>
+            <p><b>Contact:</b> ${item.contact}</p>
+            ${item.matched ? "<p style='color:yellow;'>⚡ Matched Item</p>" : ""}
+        `;
+
+        if(item.type === "Lost"){
+            lostDiv.appendChild(card);
+        } else {
+            foundDiv.appendChild(card);
+        }
+    });
+}

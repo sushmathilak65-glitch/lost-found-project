@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>University Lost & Found Portal</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins', sans-serif; }
+
+        body {
+            background: linear-gradient(rgba(20,20,80,0.7), rgba(120,0,150,0.6)),
+            url('https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            color:white;
+            text-align:center;
+        }
+
+        .hero { padding:40px; }
+        .container { width:90%; max-width:1000px; margin:auto; }
+
+        form {
+            background: rgba(255,255,255,0.15);
+            padding:20px;
+            border-radius:15px;
+            margin:20px 0;
+        }
+
+        input, select {
+            width:100%;
+            padding:10px;
+            margin:10px 0;
+            border:none;
+            border-radius:8px;
+        }
+
+        button {
+            background:#ff6b6b;
+            padding:10px;
+            border:none;
+            color:white;
+            cursor:default;
+            border-radius:8px;
+        }
+
+        .row { display:flex; gap:20px; }
+        .column { flex:1; }
+
+        .card {
+            background: rgba(255,255,255,0.25);
+            margin:10px;
+            padding:10px;
+            border-radius:10px;
+        }
+
+        .card img {
+            width:100%;
+            height:120px;
+            object-fit:cover;
+            border-radius:8px;
+        }
+
+        .matched { border:2px solid yellow; }
+
+        .highlight {
+            background:yellow;
+            color:black;
+        }
+
+        .search-bar {
+            display:flex;
+            gap:10px;
+            margin:20px 0;
+        }
+
+        #mainContent { display:none; }
+    </style>
+</head>
+
+<body>
+
+<div class="hero">
+    <h1>🎓 LOST & FOUND MANAGEMENT</h1>
+</div>
+
+<div class="container">
+
+<form id="loginForm">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" type="password" placeholder="Password">
+    <button type="submit">Login</button>
+</form>
+
+<div id="mainContent">
+
+<button type="button" onclick="testAPI()">Test API</button>
+
+<div class="search-bar">
+    <input id="searchInput" placeholder="Search..." onkeyup="performSearch()">
+    <button type="button" onclick="performSearch()">Search</button>
+    <button type="button" onclick="clearSearch()">Clear</button>
+</div>
+
+<form id="itemForm">
+    <select id="type">
+        <option>Lost</option>
+        <option>Found</option>
+    </select>
+
+    <input id="name" placeholder="Item Name">
+    <input id="description" placeholder="Description">
+    <input id="location" placeholder="Location">
+    <input id="contact" placeholder="Contact">
+    <input type="file" id="photo">
+
+    <button type="submit">Submit</button>
+</form>
+
+<div class="row">
+    <div class="column">
+        <h2>Lost</h2>
+        <div id="lostItems"></div>
+    </div>
+
+    <div class="column">
+        <h2>Found</h2>
+        <div id="foundItems"></div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+const loginForm = document.getElementById("loginForm");
+const username = document.getElementById("username");
+const password = document.getElementById("password");
+const mainContent = document.getElementById("mainContent");
+
+const itemForm = document.getElementById("itemForm");
+const type = document.getElementById("type");
+const name = document.getElementById("name");
+const description = document.getElementById("description");
+const location = document.getElementById("location");
+const contact = document.getElementById("contact");
+const photo = document.getElementById("photo");
+
+const lostItems = document.getElementById("lostItems");
+const foundItems = document.getElementById("foundItems");
+
+let allItems = [];
+let searchTerm = "";
+
+/* LOGIN */
+loginForm.addEventListener("submit", e => {
+    e.preventDefault();
+
+    if(username.value === "admin" && password.value === "1234"){
+        loginForm.style.display="none";
+        mainContent.style.display="block";
+    } else {
+        alert("Wrong login");
+    }
+});
+
+/* TEST API */
+window.testAPI = function(){
+    fetch("https://jsonplaceholder.typicode.com/todos/1")
+    .then(r=>r.json())
+    .then(d=>alert(d.title));
+};
+
+/* ADD ITEM WITH IMAGE */
+itemForm.addEventListener("submit", e=>{
+    e.preventDefault();
+
+    let file = photo.files[0];
+
+    if(!file){
+        alert("Please select a photo");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = function(){
+        let item = {
+            type:type.value,
+            name:name.value,
+            description:description.value,
+            location:location.value,
+            contact:contact.value,
+            photo: reader.result
+        };
+
+        allItems.push(item);
+        matchItems();
+        displayItems();
+        itemForm.reset();
+    };
+
+    reader.readAsDataURL(file);
+});
+
+/* SEARCH */
+window.performSearch = function(){
+    searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    displayItems();
+};
+
+window.clearSearch = function(){
+    document.getElementById("searchInput").value="";
+    searchTerm="";
+    displayItems();
+};
+
+/* AI MATCH */
+function matchItems(){
+    let lost = allItems.filter(i=>i.type==="Lost");
+    let found = allItems.filter(i=>i.type==="Found");
+
+    lost.forEach(l=>{
+        found.forEach(f=>{
+            if(
+                l.name.toLowerCase()===f.name.toLowerCase() ||
+                l.description.toLowerCase().includes(f.description.toLowerCase())
+            ){
+                l.matched=true;
+                f.matched=true;
+            }
+        });
+    });
+}
+
+/* HIGHLIGHT */
+function highlight(text){
+    if(!searchTerm) return text;
+    return text.replace(new RegExp(searchTerm,"gi"), m=>`<span class="highlight">${m}</span>`);
+}
+
+/* DISPLAY */
+function displayItems(){
+    lostItems.innerHTML="";
+    foundItems.innerHTML="";
+
+    allItems.forEach(item=>{
+        if(searchTerm &&
+           !item.name.toLowerCase().includes(searchTerm) &&
+           !item.description.toLowerCase().includes(searchTerm) &&
+           !item.location.toLowerCase().includes(searchTerm)
+        ) return;
+
+        let div=document.createElement("div");
+        div.className="card";
+
+        if(item.matched) div.classList.add("matched");
+
+        div.innerHTML=`
+            <img src="${item.photo}">
+            <h3>${highlight(item.name)}</h3>
+            <p>${highlight(item.description)}</p>
+            <p>${highlight(item.location)}</p>
+            <p>${item.contact}</p>
+        `;
+
+        if(item.type==="Lost") lostItems.appendChild(div);
+        else foundItems.appendChild(div);
+    });
+}
+
+});
+</script>
+
+</body>
+</html>
